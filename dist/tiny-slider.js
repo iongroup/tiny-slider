@@ -627,7 +627,12 @@
     });
 
     // make sure at least 1 slide
-    if (options.container.children.length < 1) {
+    if (options.container.tagName == "SLOT") {
+      if(options.container.assignedNodes().length < 1) {
+        if (supportConsoleWarn) { console.warn('No slides found in', options.container); }
+        return;
+       }
+    }else if (options.container.children.length < 1) {
       if (supportConsoleWarn) { console.warn('No slides found in', options.container); }
       return;
      }
@@ -695,7 +700,7 @@
         container = options.container,
         containerParent = container.parentNode,
         containerHTML = container.outerHTML,
-        slideItems = container.children,
+        slideItems = container.tagName === "SLOT" ? container.assignedNodes() : container.children,
         slideCount = slideItems.length,
         breakpointZone,
         windowWidth = getWindowWidth(),
@@ -1191,7 +1196,7 @@
 
         container.insertBefore(fragmentBefore, container.firstChild);
         container.appendChild(fragmentAfter);
-        slideItems = container.children;
+        slideItems = container.tagName === "SLOT" ? container.assignedNodes() : container.children;
       }
 
     }
