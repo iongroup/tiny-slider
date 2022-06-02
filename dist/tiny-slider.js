@@ -190,7 +190,7 @@
   }
 
   // create and append style sheet
-  function createStyleSheet (media, nonce) {
+  function createStyleSheet (media, nonce, container) {
     // Create the <style> tag
     var style = document.createElement("style");
     // style.setAttribute("type", "text/css");
@@ -208,6 +208,10 @@
 
     // Add the <style> element to the page
     document.querySelector('head').appendChild(style);
+
+    if (container.tagName === "SLOT") {
+      container.getRootNode().appendChild(style);
+    }
 
     return style.sheet ? style.sheet : style.styleSheet;
   }
@@ -733,7 +737,7 @@
         autoplayText = getOption('autoplayText'),
         autoplayHoverPause = getOption('autoplayHoverPause'),
         autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-        sheet = createStyleSheet(null, getOption('nonce')),
+        sheet = createStyleSheet(null, getOption('nonce'), container),
         lazyload = options.lazyload,
         lazyloadSelector = options.lazyloadSelector,
         slidePositions, // collection of slide positions

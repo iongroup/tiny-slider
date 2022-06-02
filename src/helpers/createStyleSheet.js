@@ -1,5 +1,5 @@
 // create and append style sheet
-export function createStyleSheet (media, nonce) {
+export function createStyleSheet (media, nonce, container) {
   // Create the <style> tag
   var style = document.createElement("style");
   // style.setAttribute("type", "text/css");
@@ -17,6 +17,10 @@ export function createStyleSheet (media, nonce) {
 
   // Add the <style> element to the page
   document.querySelector('head').appendChild(style);
+
+  if (container.tagName === "SLOT") {
+    container.getRootNode().appendChild(style);
+  }
 
   return style.sheet ? style.sheet : style.styleSheet;
 };
