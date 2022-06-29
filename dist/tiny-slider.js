@@ -2,7 +2,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.tns = {}));
-}(this, (function (exports) { 'use strict';
+})(this, (function (exports) { 'use strict';
 
   var win$1 = window;
 
@@ -189,40 +189,108 @@
     return position === "absolute";
   }
 
+  function checkConstructStyleSheet() {
+      try{
+          let sheet = new CSSStyleSheet();
+          if ('replaceSync' in sheet) {
+              return true;
+          } else {
+              return false;
+          }
+      } catch(err) {
+          return false;
+      }
+  }
+
+  function IONCSSStyleSheet() {
+
+  }
+
+  IONCSSStyleSheet.prototype.rules = {};
+  IONCSSStyleSheet.prototype.rulesList = [];
+  IONCSSStyleSheet.prototype.ruleLength = 0;
+
+  IONCSSStyleSheet.prototype.addRule = (selector, rules, index) => {
+    IONCSSStyleSheet.prototype.rules[selector] = rules;
+    IONCSSStyleSheet.prototype.rulesList[index] = { selector, rules };
+    IONCSSStyleSheet.prototype.ruleLength++;
+    if (rules.length > 0) {
+      // let [ruleNameDashed, value] = rules.split(':');
+      // value = value.split(';')[0];
+      // let ruleWords = ruleNameDashed.split('-');
+      // let camelCaseWord = "";
+      // let x = 0;
+      // ruleWords.forEach(word => {
+      //   if (x === 0) {
+      //     camelCaseWord = camelCaseWord + word;
+      //   } else {
+      //     camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
+      //   }
+      //   x++;
+      // });
+      let [key, value] = getCamelCase(rules);
+      document.querySelectorAll(selector).forEach(el => {
+        if (key && value) {
+          el.style[key] = value;
+        }
+      });
+    }
+  };
+
+  IONCSSStyleSheet.prototype.removeRule = (index) => {
+    delete IONCSSStyleSheet.prototype.rules[IONCSSStyleSheet.prototype.rulesList[index].selector];
+    IONCSSStyleSheet.prototype.rulesList.splice(index, 1);
+    IONCSSStyleSheet.prototype.ruleLength--;
+  };
+
   // create and append style sheet
-  function createStyleSheet (media, nonce, container) {
+  function createStyleSheet (media, nonce) {
     // Create the <style> tag
-    var style = document.createElement("style");
+    // var style = document.createElement("style");
     // style.setAttribute("type", "text/css");
 
     // Add a media (and/or media query) here if you'd like!
     // style.setAttribute("media", "screen")
     // style.setAttribute("media", "only screen and (max-width : 1024px)")
-    if (media) { style.setAttribute("media", media); }
+    // if (media) { style.setAttribute("media", media); }
 
     // Add nonce attribute for Content Security Policy
-    if (nonce) { style.setAttribute("nonce", nonce); }
+    // if (nonce) { style.setAttribute("nonce", nonce); }
 
     // WebKit hack :(
     // style.appendChild(document.createTextNode(""));
 
     // Add the <style> element to the page
-    document.querySelector('head').appendChild(style);
+    // document.querySelector('head').appendChild(style);
 
-    if (container.tagName === "SLOT") {
-      container.getRootNode().appendChild(style);
+    // return style.sheet ? style.sheet : style.styleSheet;
+    if (checkConstructStyleSheet()) {
+      let sheet = new CSSStyleSheet();
+      document.adoptedStyleSheets = document.adoptedStyleSheets ? [...document.adoptedStyleSheets, sheet] : [sheet];
+      return sheet;
+    } else {
+      let sheet = new IONCSSStyleSheet();
+      return sheet;
     }
-
-    return style.sheet ? style.sheet : style.styleSheet;
   }
 
   // cross browsers addRule method
   function addCSSRule(sheet, selector, rules, index) {
     // return raf(function() {
-      'insertRule' in sheet ?
-        sheet.insertRule(selector + '{' + rules + '}', index) :
-        sheet.addRule(selector, rules, index);
-    // });
+      'replaceSync' in sheet ?
+      sheet.replaceSync(sheet.cssRules.length > 0 ? getCompleteRules(sheet, selector + '{' + rules + '}') : selector + '{' + rules + '}') :
+      sheet.addRule(selector, rules, index);
+  // });
+  }
+
+  function getCompleteRules(sheet, cssText) {
+    let completeCSSText = "";
+    let i;
+    for (i = 0; i < sheet.cssRules.length; i++) {
+      let rule = sheet.cssRules[i];
+      completeCSSText = completeCSSText + rule.cssText;
+    }  completeCSSText = completeCSSText + cssText;
+    return completeCSSText;
   }
 
   // cross browsers addRule method
@@ -235,8 +303,7 @@
   }
 
   function getCssRulesLength(sheet) {
-    var rule = ('insertRule' in sheet) ? sheet.cssRules : sheet.rules;
-    return rule.length;
+    return ('replaceSync' in sheet) ? sheet.cssRules : sheet.ruleLength;
   }
 
   function toDegree (y, x) {
@@ -737,7 +804,7 @@
         autoplayText = getOption('autoplayText'),
         autoplayHoverPause = getOption('autoplayHoverPause'),
         autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-        sheet = createStyleSheet(null, getOption('nonce'), container),
+        sheet = createStyleSheet(null, getOption('nonce')),
         lazyload = options.lazyload,
         lazyloadSelector = options.lazyloadSelector,
         slidePositions, // collection of slide positions
@@ -2501,6 +2568,39 @@
     // set duration
     function resetDuration (el, str) {
       if (TRANSITIONDURATION) { el.style[TRANSITIONDURATION] = str; }
+      resetInlineStyles(el);
+    }
+
+    function resetInlineStyles(el) {
+      let selectors = Object.keys(IONCSSStyleSheet.prototype.rules);
+      forEach(selectors, (selector, i) => {
+        let [key, value] = getCamelCase(IONCSSStyleSheet.prototype.rules[selector]);
+        forEach(document.querySelectorAll(selector), (item, i) => {
+          if (item.isSameNode(el) && key && value) {
+            item.style[key] = value;
+          }
+        });
+      });
+    }
+
+    function getCamelCase(rules) {
+      if (!rules || !(rules.length > 0)) {
+        return [];
+      }
+      let [ruleNameDashed, value] = rules.split(':');
+      value = value.split(';')[0];
+      let ruleWords = ruleNameDashed.split('-');
+      let camelCaseWord = "";
+      let x = 0;
+      ruleWords.forEach(word => {
+        if (x === 0) {
+          camelCaseWord = camelCaseWord + word;
+        } else {
+          camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
+        }
+        x++;
+      });
+      return [camelCaseWord, value];
     }
 
     function getSliderWidth () {
@@ -3216,4 +3316,4 @@
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
-})));
+}));

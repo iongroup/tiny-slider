@@ -1,4 +1,3 @@
 export function getCssRulesLength(sheet) {
-  var rule = ('insertRule' in sheet) ? sheet.cssRules : sheet.rules;
-  return rule.length;
+  return ('replaceSync' in sheet) ? sheet.cssRules : sheet.ruleLength;
 }

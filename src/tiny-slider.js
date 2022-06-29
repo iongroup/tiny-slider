@@ -54,6 +54,7 @@ import { addEvents } from './helpers/addEvents.js';
 import { removeEvents } from './helpers/removeEvents.js';
 import { Events } from './helpers/events.js';
 import { jsTransform } from './helpers/jsTransform.js';
+import { IONCSSStyleSheet } from './helpers/ionCssStyleSheet.js';
 
 export var tns = function(options) {
   options = extend({
@@ -2059,6 +2060,39 @@ export var tns = function(options) {
   // set duration
   function resetDuration (el, str) {
     if (TRANSITIONDURATION) { el.style[TRANSITIONDURATION] = str; }
+    resetInlineStyles(el);
+  }
+
+  function resetInlineStyles(el) {
+    let selectors = Object.keys(IONCSSStyleSheet.prototype.rules);
+    forEach(selectors, (selector, i) => {
+      let [key, value] = getCamelCase(IONCSSStyleSheet.prototype.rules[selector]);
+      forEach(document.querySelectorAll(selector), (item, i) => {
+        if (item.isSameNode(el) && key && value) {
+          item.style[key] = value;
+        }
+      });
+    });
+  }
+
+  function getCamelCase(rules) {
+    if (!rules || !(rules.length > 0)) {
+      return [];
+    }
+    let [ruleNameDashed, value] = rules.split(':');
+    value = value.split(';')[0];
+    let ruleWords = ruleNameDashed.split('-');
+    let camelCaseWord = "";
+    let x = 0;
+    ruleWords.forEach(word => {
+      if (x === 0) {
+        camelCaseWord = camelCaseWord + word;
+      } else {
+        camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
+      }
+      x++;
+    });
+    return [camelCaseWord, value];
   }
 
   function getSliderWidth () {
