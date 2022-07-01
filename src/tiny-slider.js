@@ -55,6 +55,7 @@ import { removeEvents } from './helpers/removeEvents.js';
 import { Events } from './helpers/events.js';
 import { jsTransform } from './helpers/jsTransform.js';
 import { IONCSSStyleSheet } from './helpers/ionCssStyleSheet.js';
+import { getCamelCase } from './helpers/getCamelCase.js';
 
 export var tns = function(options) {
   options = extend({
@@ -2065,34 +2066,24 @@ export var tns = function(options) {
 
   function resetInlineStyles(el) {
     let selectors = Object.keys(IONCSSStyleSheet.prototype.rules);
+    var doc;
+    if (el.tagName === 'SLOT') {
+      doc = el.getRootNode();
+    } else {
+      doc = document;
+    }
     forEach(selectors, (selector, i) => {
-      let [key, value] = getCamelCase(IONCSSStyleSheet.prototype.rules[selector]);
-      forEach(document.querySelectorAll(selector), (item, i) => {
-        if (item.isSameNode(el) && key && value) {
-          item.style[key] = value;
+      let keyValuePairs = getCamelCase(IONCSSStyleSheet.prototype.rules[selector]);
+      forEach(doc.querySelectorAll(selector), (item, i) => {
+        if (item.isSameNode(el)) {
+          forEach(keyValuePairs, ([key, value]) => {
+            if (key && value) {
+              item.style[key] = value;
+            }
+          });
         }
       });
     });
-  }
-
-  function getCamelCase(rules) {
-    if (!rules || !(rules.length > 0)) {
-      return [];
-    }
-    let [ruleNameDashed, value] = rules.split(':');
-    value = value.split(';')[0];
-    let ruleWords = ruleNameDashed.split('-');
-    let camelCaseWord = "";
-    let x = 0;
-    ruleWords.forEach(word => {
-      if (x === 0) {
-        camelCaseWord = camelCaseWord + word;
-      } else {
-        camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
-      }
-      x++;
-    });
-    return [camelCaseWord, value];
   }
 
   function getSliderWidth () {

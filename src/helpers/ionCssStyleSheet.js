@@ -1,3 +1,5 @@
+import { forEach } from "./forEach";
+import { getCamelCase } from "./getCamelCase";
 export function IONCSSStyleSheet() {
 
 }
@@ -11,24 +13,13 @@ IONCSSStyleSheet.prototype.addRule = (selector, rules, index) => {
   IONCSSStyleSheet.prototype.rulesList[index] = { selector, rules };
   IONCSSStyleSheet.prototype.ruleLength++;
   if (rules.length > 0) {
-    // let [ruleNameDashed, value] = rules.split(':');
-    // value = value.split(';')[0];
-    // let ruleWords = ruleNameDashed.split('-');
-    // let camelCaseWord = "";
-    // let x = 0;
-    // ruleWords.forEach(word => {
-    //   if (x === 0) {
-    //     camelCaseWord = camelCaseWord + word;
-    //   } else {
-    //     camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
-    //   }
-    //   x++;
-    // });
-    let [key, value] = getCamelCase(rules);
+    let keyValuePairs = getCamelCase(rules);
     document.querySelectorAll(selector).forEach(el => {
-      if (key && value) {
-        el.style[key] = value;
-      }
+      forEach(keyValuePairs, ([key, value]) => {
+        if (key && value) {
+          el.style[key] = value;
+        }
+      })
     });
   }
 }
