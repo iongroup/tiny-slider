@@ -1,5 +1,5 @@
 import { checkConstructStyleSheet } from "./checkConstructStyleSheet";
-import { IONCSSStyleSheet } from "./ionCssStyleSheet";
+import { CustomCssStyleSheet } from "./customCssStyleSheet";
 
 // create and append style sheet
 export function createStyleSheet (media, nonce, container) {
@@ -13,7 +13,7 @@ export function createStyleSheet (media, nonce, container) {
     }
     return sheet;
   } else {
-    let sheet = new IONCSSStyleSheet();
+    let sheet = new CustomCssStyleSheet();
     return sheet;
   }
 };

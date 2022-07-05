@@ -54,7 +54,7 @@ import { addEvents } from './helpers/addEvents.js';
 import { removeEvents } from './helpers/removeEvents.js';
 import { Events } from './helpers/events.js';
 import { jsTransform } from './helpers/jsTransform.js';
-import { IONCSSStyleSheet } from './helpers/ionCssStyleSheet.js';
+import { CustomCssStyleSheet } from './helpers/customCssStyleSheet.js';
 import { getCamelCase } from './helpers/getCamelCase.js';
 
 export var tns = function(options) {
@@ -2065,7 +2065,7 @@ export var tns = function(options) {
   }
 
   function resetInlineStyles(el) {
-    let selectors = Object.keys(IONCSSStyleSheet.prototype.rules);
+    let selectors = Object.keys(CustomCssStyleSheet.prototype.rules);
     var doc;
     if (el.tagName === 'SLOT') {
       doc = el.getRootNode();
@@ -2073,7 +2073,7 @@ export var tns = function(options) {
       doc = document;
     }
     forEach(selectors, (selector, i) => {
-      let keyValuePairs = getCamelCase(IONCSSStyleSheet.prototype.rules[selector]);
+      let keyValuePairs = getCamelCase(CustomCssStyleSheet.prototype.rules[selector]);
       forEach(doc.querySelectorAll(selector), (item, i) => {
         if (item.isSameNode(el)) {
           forEach(keyValuePairs, ([key, value]) => {
