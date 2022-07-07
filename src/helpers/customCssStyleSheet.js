@@ -1,31 +1,44 @@
 import { forEach } from "./forEach";
 import { getCamelCase } from "./getCamelCase";
-export function CustomCssStyleSheet() {
+export class CustomCssStyleSheet {
 
-}
+  _rules = [];
 
-CustomCssStyleSheet.prototype.rules = {};
-CustomCssStyleSheet.prototype.rulesList = [];
-CustomCssStyleSheet.prototype.ruleLength = 0;
+  _rulesMap = {};
 
-CustomCssStyleSheet.prototype.addRule = (selector, rules, index) => {
-  CustomCssStyleSheet.prototype.rules[selector] = rules;
-  CustomCssStyleSheet.prototype.rulesList[index] = { selector, rules };
-  CustomCssStyleSheet.prototype.ruleLength++;
-  if (rules.length > 0) {
-    let keyValuePairs = getCamelCase(rules);
-    document.querySelectorAll(selector).forEach(el => {
-      forEach(keyValuePairs, ([key, value]) => {
-        if (key && value) {
-          el.style[key] = value;
-        }
-      })
-    });
+  set rules(value) {
+    this._rules = value;
   }
-}
 
-CustomCssStyleSheet.prototype.removeRule = (index) => {
-  delete CustomCssStyleSheet.prototype.rules[CustomCssStyleSheet.prototype.rulesList[index].selector];
-  CustomCssStyleSheet.prototype.rulesList.splice(index, 1);
-  CustomCssStyleSheet.prototype.ruleLength--;
+  get rules() {
+    return this._rules;
+  }
+
+  set rulesMap(value) {
+    this._rulesMap = value;
+  }
+
+  get rulesMap() {
+    return this._rulesMap;
+  }
+
+  addRule(selector, rules, index) {
+    this.rules[index] = { selector, rules };
+    this.rulesMap[selector] = rules;
+    if (rules.length > 0) {
+      let keyValuePairs = getCamelCase(rules);
+      document.querySelectorAll(selector).forEach(el => {
+        forEach(keyValuePairs, ([key, value]) => {
+          if (key && value) {
+            el.style[key] = value;
+          }
+        })
+      });
+    }
+  }
+
+  removeRule(index) {
+    delete this.rulesMap[this.rules[index].selector];
+    this.rules.splice(index, 1);
+  }
 }

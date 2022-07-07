@@ -54,8 +54,8 @@ import { addEvents } from './helpers/addEvents.js';
 import { removeEvents } from './helpers/removeEvents.js';
 import { Events } from './helpers/events.js';
 import { jsTransform } from './helpers/jsTransform.js';
-import { CustomCssStyleSheet } from './helpers/customCssStyleSheet.js';
 import { getCamelCase } from './helpers/getCamelCase.js';
+import { checkConstructStyleSheet } from './helpers/checkConstructStyleSheet.js';
 
 export var tns = function(options) {
   options = extend({
@@ -146,7 +146,7 @@ export var tns = function(options) {
     if (localStorageAccess) {
       // remove storage when browser version changes
       if (tnsStorage['tnsApp'] && tnsStorage['tnsApp'] !== browserInfo) {
-        ['tC', 'tPL', 'tMQ', 'tTf', 't3D', 'tTDu', 'tTDe', 'tADu', 'tADe', 'tTE', 'tAE'].forEach(function(item) { tnsStorage.removeItem(item); });
+        ['tC', 'tPL', 'tMQ', 'tTf', 't3D', 'tTDu', 'tTDe', 'tADu', 'tADe', 'tTE', 'tAE', 'tCSS'].forEach(function(item) { tnsStorage.removeItem(item); });
       }
       // update browserInfo
       localStorage['tnsApp'] = browserInfo;
@@ -163,7 +163,8 @@ export var tns = function(options) {
       ANIMATIONDURATION = tnsStorage['tADu'] ? checkStorageValue(tnsStorage['tADu']) : setLocalStorage(tnsStorage, 'tADu', whichProperty('animationDuration'), localStorageAccess),
       ANIMATIONDELAY = tnsStorage['tADe'] ? checkStorageValue(tnsStorage['tADe']) : setLocalStorage(tnsStorage, 'tADe', whichProperty('animationDelay'), localStorageAccess),
       TRANSITIONEND = tnsStorage['tTE'] ? checkStorageValue(tnsStorage['tTE']) : setLocalStorage(tnsStorage, 'tTE', getEndProperty(TRANSITIONDURATION, 'Transition'), localStorageAccess),
-      ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess);
+      ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess),
+      HASCONSTRUCTIBLESTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
 
   // get element nodes from selectors
   var supportConsoleWarn = win.console && typeof win.console.warn === "function",
@@ -292,7 +293,7 @@ export var tns = function(options) {
       autoplayText = getOption('autoplayText'),
       autoplayHoverPause = getOption('autoplayHoverPause'),
       autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-      sheet = createStyleSheet(null, getOption('nonce'), container),
+      sheet = createStyleSheet(null, getOption('nonce'), container, HASCONSTRUCTIBLESTYLESHEET),
       lazyload = options.lazyload,
       lazyloadSelector = options.lazyloadSelector,
       slidePositions, // collection of slide positions
@@ -726,9 +727,9 @@ export var tns = function(options) {
     // add id, class, aria attributes
     // before clone slides
     forEach(slideItems, function(item, i) {
-      addClass(item, 'tns-item');
+      addClass(item, 'tns-item', sheet);
       if (!item.id) { item.id = slideId + '-item' + i; }
-      if (!carousel && animateNormal) { addClass(item, animateNormal); }
+      if (!carousel && animateNormal) { addClass(item, animateNormal, sheet); }
       setAttrs(item, {
         'aria-hidden': 'true',
         'tabindex': '-1'
@@ -745,13 +746,13 @@ export var tns = function(options) {
       for (var j = cloneCount; j--;) {
         var num = j%slideCount,
             cloneFirst = slideItems[num].cloneNode(true);
-        addClass(cloneFirst, slideClonedClass);
+        addClass(cloneFirst, slideClonedClass, sheet);
         removeAttrs(cloneFirst, 'id');
         fragmentAfter.insertBefore(cloneFirst, fragmentAfter.firstChild);
 
         if (carousel) {
           var cloneLast = slideItems[slideCount - 1 - num].cloneNode(true);
-          addClass(cloneLast, slideClonedClass);
+          addClass(cloneLast, slideClonedClass, sheet);
           removeAttrs(cloneLast, 'id');
           fragmentBefore.appendChild(cloneLast);
         }
@@ -778,7 +779,7 @@ export var tns = function(options) {
           if (src && src.indexOf('data:image') < 0) {
             img.src = '';
             addEvents(img, imgEvents);
-            addClass(img, 'loading');
+            addClass(img, 'loading', sheet);
 
             img.src = src;
           // data img
@@ -856,8 +857,8 @@ export var tns = function(options) {
       for (var i = index, l = index + Math.min(slideCount, items); i < l; i++) {
         var item = slideItems[i];
         item.style.left = (i - index) * 100 / items + '%';
-        addClass(item, animateIn);
-        removeClass(item, animateNormal);
+        addClass(item, animateIn, sheet);
+        removeClass(item, animateNormal, sheet);
       }
     }
 
@@ -1082,7 +1083,7 @@ export var tns = function(options) {
 
       setAttrs(navItems[navCurrentIndex], {'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent});
       removeAttrs(navItems[navCurrentIndex], 'tabindex');
-      addClass(navItems[navCurrentIndex], navActiveClass);
+      addClass(navItems[navCurrentIndex], navActiveClass, sheet);
 
       // add events
       addEvents(navContainer, navEvents);
@@ -1617,8 +1618,8 @@ export var tns = function(options) {
     if (cloneCount) {
       var str = 'tns-transparent';
       for (var i = cloneCount; i--;) {
-        if (carousel) { addClass(slideItems[i], str); }
-        addClass(slideItems[slideCountNew - i - 1], str);
+        if (carousel) { addClass(slideItems[i], str, sheet); }
+        addClass(slideItems[slideCountNew - i - 1], str, sheet);
       }
     }
 
@@ -1639,8 +1640,8 @@ export var tns = function(options) {
     if (cloneCount) {
       var str = 'tns-transparent';
       for (var i = cloneCount; i--;) {
-        if (carousel) { removeClass(slideItems[i], str); }
-        removeClass(slideItems[slideCountNew - i - 1], str);
+        if (carousel) { removeClass(slideItems[i], str, sheet); }
+        removeClass(slideItems[slideCountNew - i - 1], str, sheet);
       }
     }
 
@@ -1671,8 +1672,8 @@ export var tns = function(options) {
       for (var i = index, l = index + slideCount; i < l; i++) {
         var item = slideItems[i];
         removeAttrs(item, ['style']);
-        removeClass(item, animateIn);
-        removeClass(item, animateNormal);
+        removeClass(item, animateIn, sheet);
+        removeClass(item, animateNormal, sheet);
       }
     }
 
@@ -1702,7 +1703,7 @@ export var tns = function(options) {
         var item = slideItems[i],
             classN = i < index + items ? animateIn : animateNormal;
         item.style.left = (i - index) * 100 / items + '%';
-        addClass(item, classN);
+        addClass(item, classN, sheet);
       }
     }
 
@@ -1814,7 +1815,7 @@ export var tns = function(options) {
           var srcset = getAttr(img, 'data-srcset');
           if (srcset) { img.srcset = srcset; }
 
-          addClass(img, 'loading');
+          addClass(img, 'loading', sheet);
         }
       });
     }
@@ -1829,18 +1830,18 @@ export var tns = function(options) {
   }
 
   function imgLoaded (img) {
-    addClass(img, 'loaded');
+    addClass(img, 'loaded', sheet);
     imgCompleted(img);
   }
 
   function imgFailed (img) {
-    addClass(img, 'failed');
+    addClass(img, 'failed', sheet);
     imgCompleted(img);
   }
 
   function imgCompleted (img) {
-    addClass(img, imgCompleteClass);
-    removeClass(img, 'loading');
+    addClass(img, imgCompleteClass, sheet);
+    removeClass(img, 'loading', sheet);
     removeEvents(img, imgEvents);
   }
 
@@ -1943,7 +1944,7 @@ export var tns = function(options) {
       if (i >= start && i <= end) {
         if (hasAttr(item, 'aria-hidden')) {
           removeAttrs(item, ['aria-hidden', 'tabindex']);
-          addClass(item, slideActiveClass);
+          addClass(item, slideActiveClass, sheet);
         }
       // hide slides
       } else {
@@ -1952,7 +1953,7 @@ export var tns = function(options) {
             'aria-hidden': 'true',
             'tabindex': '-1'
           });
-          removeClass(item, slideActiveClass);
+          removeClass(item, slideActiveClass, sheet);
         }
       }
     });
@@ -1966,25 +1967,25 @@ export var tns = function(options) {
 
       if (i >= index && i < l) {
         // add transitions to visible slides when adjusting their positions
-        addClass(item, 'tns-moving');
+        addClass(item, 'tns-moving', sheet);
 
         item.style.left = (i - index) * 100 / items + '%';
-        addClass(item, animateIn);
-        removeClass(item, animateNormal);
+        addClass(item, animateIn, sheet);
+        removeClass(item, animateNormal, sheet);
       } else if (item.style.left) {
         item.style.left = '';
-        addClass(item, animateNormal);
-        removeClass(item, animateIn);
+        addClass(item, animateNormal, sheet);
+        removeClass(item, animateIn, sheet);
       }
 
       // remove outlet animation
-      removeClass(item, animateOut);
+      removeClass(item, animateOut, sheet);
     }
 
     // removing '.tns-moving'
     setTimeout(function() {
       forEach(slideItems, function(el) {
-        removeClass(el, 'tns-moving');
+        removeClass(el, 'tns-moving', sheet);
       });
     }, 300);
   }
@@ -2004,11 +2005,11 @@ export var tns = function(options) {
           'tabindex': '-1',
           'aria-label': navStr + (navCurrentIndexCached + 1)
         });
-        removeClass(navPrev, navActiveClass);
+        removeClass(navPrev, navActiveClass, sheet);
 
         setAttrs(navCurrent, {'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent});
         removeAttrs(navCurrent, 'tabindex');
-        addClass(navCurrent, navActiveClass);
+        addClass(navCurrent, navActiveClass, sheet);
 
         navCurrentIndexCached = navCurrentIndex;
       }
@@ -2061,11 +2062,13 @@ export var tns = function(options) {
   // set duration
   function resetDuration (el, str) {
     if (TRANSITIONDURATION) { el.style[TRANSITIONDURATION] = str; }
-    resetInlineStyles(el);
   }
 
   function resetInlineStyles(el) {
-    let selectors = Object.keys(CustomCssStyleSheet.prototype.rules);
+    let selectors = Object.keys(sheet && sheet.rules);
+    if (!selectors) {
+      return;
+    }
     var doc;
     if (el.tagName === 'SLOT') {
       doc = el.getRootNode();
@@ -2073,7 +2076,7 @@ export var tns = function(options) {
       doc = document;
     }
     forEach(selectors, (selector, i) => {
-      let keyValuePairs = getCamelCase(CustomCssStyleSheet.prototype.rules[selector]);
+      let keyValuePairs = getCamelCase(sheet.rulesMap[selector]);
       forEach(doc.querySelectorAll(selector), (item, i) => {
         if (item.isSameNode(el)) {
           forEach(keyValuePairs, ([key, value]) => {
@@ -2162,8 +2165,8 @@ export var tns = function(options) {
       if (animateDelay && TRANSITIONDELAY) {
         item.style[TRANSITIONDELAY] = item.style[ANIMATIONDELAY] = animateDelay * (i - number) / 1000 + 's';
       }
-      removeClass(item, classOut);
-      addClass(item, classIn);
+      removeClass(item, classOut, sheet);
+      addClass(item, classIn, sheet);
 
       if (isOut) { slideItemsOut.push(item); }
     }
@@ -2261,8 +2264,8 @@ export var tns = function(options) {
             item.style[ANIMATIONDELAY] = '';
             item.style[TRANSITIONDELAY] = '';
           }
-          removeClass(item, animateOut);
-          addClass(item, animateNormal);
+          removeClass(item, animateOut, sheet);
+          addClass(item, animateNormal, sheet);
         }
       }
 

@@ -6,19 +6,12 @@ export function getCamelCase(rules) {
     }
     let camelCaseWords = [];
     forEach(rules.split(';'), (rule) => {
-      let [ruleNameDashed, value] = rule.split(':');
-      let ruleWords = ruleNameDashed.split('-');
-      let camelCaseWord = "";
-      let x = 0;
-      forEach(ruleWords, (word) => {
-        if (x === 0) {
-          camelCaseWord = camelCaseWord + word;
-        } else {
-          camelCaseWord = camelCaseWord + word.charAt(0).toUpperCase() + word.substring(1);
-        }
-        x++;
-      });
-      camelCaseWords.push([camelCaseWord, value]);
+      if (rule.length > 0) {
+        let [ruleNameDashed, value] = rule.split(':');
+        let ruleWords = ruleNameDashed.split('-').join(" ").toLowerCase();
+        let camelCaseWord = ruleWords.replace(/(?:^\w|[A-Z]|\b\w)/g, (ltr, idx) => idx === 0 ? ltr.toLowerCase() : ltr.toUpperCase()).replace(/\s+/g, '');
+        camelCaseWords.push([camelCaseWord, value]);
+      }
     });
     return camelCaseWords;
 }
