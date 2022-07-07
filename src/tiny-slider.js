@@ -2064,31 +2064,6 @@ export var tns = function(options) {
     if (TRANSITIONDURATION) { el.style[TRANSITIONDURATION] = str; }
   }
 
-  function resetInlineStyles(el) {
-    let selectors = Object.keys(sheet && sheet.rules);
-    if (!selectors) {
-      return;
-    }
-    var doc;
-    if (el.tagName === 'SLOT') {
-      doc = el.getRootNode();
-    } else {
-      doc = document;
-    }
-    forEach(selectors, (selector, i) => {
-      let keyValuePairs = getCamelCase(sheet.rulesMap[selector]);
-      forEach(doc.querySelectorAll(selector), (item, i) => {
-        if (item.isSameNode(el)) {
-          forEach(keyValuePairs, ([key, value]) => {
-            if (key && value) {
-              item.style[key] = value;
-            }
-          });
-        }
-      });
-    });
-  }
-
   function getSliderWidth () {
     return fixedWidth ? (fixedWidth + gutter) * slideCountNew : slidePositions[slideCountNew];
   }
