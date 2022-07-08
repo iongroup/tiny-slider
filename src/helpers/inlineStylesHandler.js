@@ -7,8 +7,9 @@ function editInlineStyles(el, sheet, action) {
       return;
     }
     var doc;
-    if (el.tagName === 'SLOT') {
-      doc = el.getRootNode();
+    let shadowRoot = el.getRootNode();
+    if (shadowRoot instanceof ShadowRoot) {
+      doc = shadowRoot;
     } else {
       doc = document;
     }

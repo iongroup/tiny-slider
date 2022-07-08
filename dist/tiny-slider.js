@@ -235,7 +235,11 @@
     }
 
     addRule(selector, rules, index) {
-      this.rules[index] = { selector, rules };
+      if (this.rules[index]) {
+        this.rules.splice(index, 0, { selector, rules });
+      } else {
+        this.rules[index] = { selector, rules };
+      }  
       this.rulesMap[selector] = rules;
       if (rules.length > 0) {
         let keyValuePairs = getCamelCase(rules);
@@ -256,8 +260,8 @@
   }
 
   // create and append style sheet
-  function createStyleSheet (media, nonce, container, HASCONSTRUCTIBLESTYLESHEET) {
-    if (HASCONSTRUCTIBLESTYLESHEET) {
+  function createStyleSheet (media, nonce, container, HASCSSSTYLESHEET) {
+    if (HASCSSSTYLESHEET) {
       let sheet = new CSSStyleSheet();
       if (container.tagName === "SLOT") {
         let shadowRoot = container.getRootNode();
@@ -299,7 +303,7 @@
   }
 
   function getCssRulesLength(sheet) {
-    return ('replaceSync' in sheet) ? sheet.cssRules : (sheet.rules && sheet.rules.length);
+    return ('replaceSync' in sheet) ? (sheet.cssRules && sheet.cssRules.length) : (sheet.rules && sheet.rules.length);
   }
 
   function toDegree (y, x) {
@@ -331,8 +335,9 @@
         return;
       }
       var doc;
-      if (el.tagName === 'SLOT') {
-        doc = el.getRootNode();
+      let shadowRoot = el.getRootNode();
+      if (shadowRoot instanceof ShadowRoot) {
+        doc = shadowRoot;
       } else {
         doc = document;
       }
@@ -726,7 +731,7 @@
         ANIMATIONDELAY = tnsStorage['tADe'] ? checkStorageValue(tnsStorage['tADe']) : setLocalStorage(tnsStorage, 'tADe', whichProperty('animationDelay'), localStorageAccess),
         TRANSITIONEND = tnsStorage['tTE'] ? checkStorageValue(tnsStorage['tTE']) : setLocalStorage(tnsStorage, 'tTE', getEndProperty(TRANSITIONDURATION, 'Transition'), localStorageAccess),
         ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess),
-        HASCONSTRUCTIBLESTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
+        HASCSSSTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
 
     // get element nodes from selectors
     var supportConsoleWarn = win.console && typeof win.console.warn === "function",
@@ -855,7 +860,7 @@
         autoplayText = getOption('autoplayText'),
         autoplayHoverPause = getOption('autoplayHoverPause'),
         autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-        sheet = createStyleSheet(null, getOption('nonce'), container, HASCONSTRUCTIBLESTYLESHEET),
+        sheet = createStyleSheet(null, getOption('nonce'), container, HASCSSSTYLESHEET),
         lazyload = options.lazyload,
         lazyloadSelector = options.lazyloadSelector,
         slidePositions, // collection of slide positions

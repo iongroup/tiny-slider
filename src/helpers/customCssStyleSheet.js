@@ -23,7 +23,11 @@ export class CustomCssStyleSheet {
   }
 
   addRule(selector, rules, index) {
-    this.rules[index] = { selector, rules };
+    if (this.rules[index]) {
+      this.rules.splice(index, 0, { selector, rules });
+    } else {
+      this.rules[index] = { selector, rules };
+    }  
     this.rulesMap[selector] = rules;
     if (rules.length > 0) {
       let keyValuePairs = getCamelCase(rules);

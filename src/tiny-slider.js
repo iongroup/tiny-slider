@@ -164,7 +164,7 @@ export var tns = function(options) {
       ANIMATIONDELAY = tnsStorage['tADe'] ? checkStorageValue(tnsStorage['tADe']) : setLocalStorage(tnsStorage, 'tADe', whichProperty('animationDelay'), localStorageAccess),
       TRANSITIONEND = tnsStorage['tTE'] ? checkStorageValue(tnsStorage['tTE']) : setLocalStorage(tnsStorage, 'tTE', getEndProperty(TRANSITIONDURATION, 'Transition'), localStorageAccess),
       ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess),
-      HASCONSTRUCTIBLESTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
+      HASCSSSTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
 
   // get element nodes from selectors
   var supportConsoleWarn = win.console && typeof win.console.warn === "function",
@@ -293,7 +293,7 @@ export var tns = function(options) {
       autoplayText = getOption('autoplayText'),
       autoplayHoverPause = getOption('autoplayHoverPause'),
       autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-      sheet = createStyleSheet(null, getOption('nonce'), container, HASCONSTRUCTIBLESTYLESHEET),
+      sheet = createStyleSheet(null, getOption('nonce'), container, HASCSSSTYLESHEET),
       lazyload = options.lazyload,
       lazyloadSelector = options.lazyloadSelector,
       slidePositions, // collection of slide positions
