@@ -212,11 +212,53 @@
       return camelCaseWords;
   }
 
+  function editInlineStyles(el, sheet, action) {
+      let selectors = Object.keys(sheet && sheet.rulesMap);
+      if (!selectors || selectors.length === 0) {
+        return;
+      }
+      var doc;
+      let shadowRoot = el.getRootNode();
+      if (shadowRoot instanceof ShadowRoot) {
+        doc = shadowRoot;
+      } else {
+        doc = document;
+      }
+      forEach(selectors, (selector, i) => {
+        let keyValuePairs = getCamelCase(sheet.rulesMap[selector]);
+        forEach(doc.querySelectorAll(selector), (item, i) => {
+          if (item.isSameNode(el)) {
+            forEach(keyValuePairs, ([key, value]) => {
+              if (key && value) {
+                  if (action === "add") {
+                      item.style[key] = value;
+                  } else if (action === "remove") {
+                      item.style[key] = "";
+                  }
+              }
+            });
+          }
+        });
+      });
+  }
+
+  function addInlineStyles(el, sheet) {
+      editInlineStyles(el, sheet, "add");
+  }
+
+  function removeInlineStyles(el, sheet) {
+      editInlineStyles(el, sheet, "remove");
+  }
+
   class CustomCssStyleSheet {
 
     _rules = [];
 
     _rulesMap = {};
+
+    constructor(container) {
+      this.container = container;
+    }
 
     set rules(value) {
       this._rules = value;
@@ -242,13 +284,15 @@
       }  
       this.rulesMap[selector] = rules;
       if (rules.length > 0) {
-        let keyValuePairs = getCamelCase(rules);
-        document.querySelectorAll(selector).forEach(el => {
-          forEach(keyValuePairs, ([key, value]) => {
-            if (key && value) {
-              el.style[key] = value;
-            }
-          });
+        var doc;
+        var root = this.container && this.container.getRootNode();
+        if (root instanceof ShadowRoot) {
+          doc = root;
+        } else {
+          doc = document;
+        }
+        doc.querySelectorAll(selector).forEach(el => {
+          addInlineStyles(el, this);
         });
       }
     }
@@ -260,8 +304,8 @@
   }
 
   // create and append style sheet
-  function createStyleSheet (media, nonce, container, HASCSSSTYLESHEET) {
-    if (HASCSSSTYLESHEET) {
+  function createStyleSheet (media, nonce, container, canCreateStyleSheetObject) {
+    if (canCreateStyleSheetObject) {
       let sheet = new CSSStyleSheet();
       if (container.tagName === "SLOT") {
         let shadowRoot = container.getRootNode();
@@ -328,44 +372,6 @@
   var hasClass = classListSupport ?
       function (el, str) { return el.classList.contains(str); } :
       function (el, str) { return el.className.indexOf(str) >= 0; };
-
-  function editInlineStyles(el, sheet, action) {
-      let selectors = Object.keys(sheet && sheet.rulesMap);
-      if (!selectors || selectors.length === 0) {
-        return;
-      }
-      var doc;
-      let shadowRoot = el.getRootNode();
-      if (shadowRoot instanceof ShadowRoot) {
-        doc = shadowRoot;
-      } else {
-        doc = document;
-      }
-      forEach(selectors, (selector, i) => {
-        let keyValuePairs = getCamelCase(sheet.rulesMap[selector]);
-        forEach(doc.querySelectorAll(selector), (item, i) => {
-          if (item.isSameNode(el)) {
-            forEach(keyValuePairs, ([key, value]) => {
-              if (key && value) {
-                  if (action === "add") {
-                      item.style[key] = value;
-                  } else if (action === "remove") {
-                      item.style[key] = "";
-                  }
-              }
-            });
-          }
-        });
-      });
-  }
-
-  function addInlineStyles(el, sheet) {
-      editInlineStyles(el, sheet, "add");
-  }
-
-  function removeInlineStyles(el, sheet) {
-      editInlineStyles(el, sheet, "remove");
-  }
 
   var addClass = classListSupport ?
       function (el, str, sheet) {

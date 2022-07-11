@@ -1,10 +1,15 @@
 import { forEach } from "./forEach";
 import { getCamelCase } from "./getCamelCase";
+import { addInlineStyles } from "./inlineStylesHandler";
 export class CustomCssStyleSheet {
 
   _rules = [];
 
   _rulesMap = {};
+
+  constructor(container) {
+    this.container = container
+  }
 
   set rules(value) {
     this._rules = value;
@@ -30,13 +35,15 @@ export class CustomCssStyleSheet {
     }  
     this.rulesMap[selector] = rules;
     if (rules.length > 0) {
-      let keyValuePairs = getCamelCase(rules);
-      document.querySelectorAll(selector).forEach(el => {
-        forEach(keyValuePairs, ([key, value]) => {
-          if (key && value) {
-            el.style[key] = value;
-          }
-        })
+      var doc;
+      var root = this.container && this.container.getRootNode();
+      if (root instanceof ShadowRoot) {
+        doc = root;
+      } else {
+        doc = document;
+      }
+      doc.querySelectorAll(selector).forEach(el => {
+        addInlineStyles(el, this);
       });
     }
   }
