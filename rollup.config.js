@@ -1,4 +1,4 @@
-
+import { uglify } from "rollup-plugin-uglify";
 const config = {
   input: 'src/tiny-slider.js',
   output: {
@@ -8,4 +8,14 @@ const config = {
   }
 };
 
-export default config;
+const config_min = {
+  input: 'src/tiny-slider.js',
+  output: {
+    file: 'dist/min/tiny-slider.min.js',
+    format: 'umd',
+    name: 'tns'
+  },
+  plugins: [uglify()]
+}
+
+export default [config, config_min];

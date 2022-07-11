@@ -1,26 +1,17 @@
+import { CustomCssStyleSheet } from "./customCssStyleSheet";
+
 // create and append style sheet
-export function createStyleSheet (media, nonce, container) {
-  // Create the <style> tag
-  var style = document.createElement("style");
-  // style.setAttribute("type", "text/css");
-
-  // Add a media (and/or media query) here if you'd like!
-  // style.setAttribute("media", "screen")
-  // style.setAttribute("media", "only screen and (max-width : 1024px)")
-  if (media) { style.setAttribute("media", media); }
-
-  // Add nonce attribute for Content Security Policy
-  if (nonce) { style.setAttribute("nonce", nonce); }
-
-  // WebKit hack :(
-  // style.appendChild(document.createTextNode(""));
-
-  // Add the <style> element to the page
-  document.querySelector('head').appendChild(style);
-
-  if (container.tagName === "SLOT") {
-    container.getRootNode().appendChild(style);
+export function createStyleSheet (media, nonce, container, canCreateStyleSheetObject) {
+  if (canCreateStyleSheetObject) {
+    let sheet = new CSSStyleSheet();
+    if (container.tagName === "SLOT") {
+      let shadowRoot = container.getRootNode();
+      shadowRoot.adoptedStyleSheets = shadowRoot.adoptedStyleSheets ? [...shadowRoot.adoptedStyleSheets, sheet] : [sheet]; 
+    }
+    document.adoptedStyleSheets = document.adoptedStyleSheets ? [...document.adoptedStyleSheets, sheet] : [sheet];
+    return sheet;
+  } else {
+    let sheet = new CustomCssStyleSheet();
+    return sheet;
   }
-
-  return style.sheet ? style.sheet : style.styleSheet;
 };

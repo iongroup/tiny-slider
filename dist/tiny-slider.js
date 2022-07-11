@@ -189,40 +189,152 @@
     return position === "absolute";
   }
 
-  // create and append style sheet
-  function createStyleSheet (media, nonce, container) {
-    // Create the <style> tag
-    var style = document.createElement("style");
-    // style.setAttribute("type", "text/css");
+  // https://toddmotto.com/ditch-the-array-foreach-call-nodelist-hack/
+  function forEach (arr, callback, scope) {
+    for (var i = 0, l = arr.length; i < l; i++) {
+      callback.call(scope, arr[i], i);
+    }
+  }
 
-    // Add a media (and/or media query) here if you'd like!
-    // style.setAttribute("media", "screen")
-    // style.setAttribute("media", "only screen and (max-width : 1024px)")
-    if (media) { style.setAttribute("media", media); }
+  function getCamelCase(rules) {
+      if (!rules || !(rules.length > 0)) {
+        return [];
+      }
+      let camelCaseWords = [];
+      forEach(rules.split(';'), (rule) => {
+        if (rule.length > 0) {
+          let [ruleNameDashed, value] = rule.split(':');
+          let ruleWords = ruleNameDashed.split('-').join(" ").toLowerCase();
+          let camelCaseWord = ruleWords.replace(/(?:^\w|[A-Z]|\b\w)/g, (ltr, idx) => idx === 0 ? ltr.toLowerCase() : ltr.toUpperCase()).replace(/\s+/g, '');
+          camelCaseWords.push([camelCaseWord, value]);
+        }
+      });
+      return camelCaseWords;
+  }
 
-    // Add nonce attribute for Content Security Policy
-    if (nonce) { style.setAttribute("nonce", nonce); }
+  function editInlineStyles(el, sheet, action) {
+      let selectors = Object.keys(sheet && sheet.rulesMap);
+      if (!selectors || selectors.length === 0) {
+        return;
+      }
+      var doc;
+      let shadowRoot = el.getRootNode();
+      if (shadowRoot instanceof ShadowRoot) {
+        doc = shadowRoot;
+      } else {
+        doc = document;
+      }
+      forEach(selectors, (selector, i) => {
+        let keyValuePairs = getCamelCase(sheet.rulesMap[selector]);
+        forEach(doc.querySelectorAll(selector), (item, i) => {
+          if (item.isSameNode(el)) {
+            forEach(keyValuePairs, ([key, value]) => {
+              if (key && value) {
+                  if (action === "add") {
+                      item.style[key] = value;
+                  } else if (action === "remove") {
+                      item.style[key] = "";
+                  }
+              }
+            });
+          }
+        });
+      });
+  }
 
-    // WebKit hack :(
-    // style.appendChild(document.createTextNode(""));
+  function addInlineStyles(el, sheet) {
+      editInlineStyles(el, sheet, "add");
+  }
 
-    // Add the <style> element to the page
-    document.querySelector('head').appendChild(style);
+  function removeInlineStyles(el, sheet) {
+      editInlineStyles(el, sheet, "remove");
+  }
 
-    if (container.tagName === "SLOT") {
-      container.getRootNode().appendChild(style);
+  class CustomCssStyleSheet {
+
+    _rules = [];
+
+    _rulesMap = {};
+
+    constructor(container) {
+      this.container = container;
     }
 
-    return style.sheet ? style.sheet : style.styleSheet;
+    set rules(value) {
+      this._rules = value;
+    }
+
+    get rules() {
+      return this._rules;
+    }
+
+    set rulesMap(value) {
+      this._rulesMap = value;
+    }
+
+    get rulesMap() {
+      return this._rulesMap;
+    }
+
+    addRule(selector, rules, index) {
+      if (this.rules[index]) {
+        this.rules.splice(index, 0, { selector, rules });
+      } else {
+        this.rules[index] = { selector, rules };
+      }  
+      this.rulesMap[selector] = rules;
+      if (rules.length > 0) {
+        var doc;
+        var root = this.container && this.container.getRootNode();
+        if (root instanceof ShadowRoot) {
+          doc = root;
+        } else {
+          doc = document;
+        }
+        doc.querySelectorAll(selector).forEach(el => {
+          addInlineStyles(el, this);
+        });
+      }
+    }
+
+    removeRule(index) {
+      delete this.rulesMap[this.rules[index].selector];
+      this.rules.splice(index, 1);
+    }
+  }
+
+  // create and append style sheet
+  function createStyleSheet (media, nonce, container, canCreateStyleSheetObject) {
+    if (canCreateStyleSheetObject) {
+      let sheet = new CSSStyleSheet();
+      if (container.tagName === "SLOT") {
+        let shadowRoot = container.getRootNode();
+        shadowRoot.adoptedStyleSheets = shadowRoot.adoptedStyleSheets ? [...shadowRoot.adoptedStyleSheets, sheet] : [sheet]; 
+      }
+      document.adoptedStyleSheets = document.adoptedStyleSheets ? [...document.adoptedStyleSheets, sheet] : [sheet];
+      return sheet;
+    } else {
+      let sheet = new CustomCssStyleSheet();
+      return sheet;
+    }
   }
 
   // cross browsers addRule method
   function addCSSRule(sheet, selector, rules, index) {
     // return raf(function() {
-      'insertRule' in sheet ?
-        sheet.insertRule(selector + '{' + rules + '}', index) :
-        sheet.addRule(selector, rules, index);
-    // });
+      'replaceSync' in sheet ?
+      sheet.replaceSync(sheet.cssRules.length > 0 ? concatExistingRules(sheet, selector + '{' + rules + '}') : selector + '{' + rules + '}') :
+      sheet.addRule(selector, rules, index);
+  // });
+  }
+
+  function concatExistingRules(sheet, cssText) {
+    let finalCssText = "";
+    forEach(sheet.cssRules, (rule) => {
+      finalCssText = finalCssText + rule.cssText;
+    });
+    finalCssText = finalCssText + cssText;
+    return finalCssText;
   }
 
   // cross browsers addRule method
@@ -235,8 +347,7 @@
   }
 
   function getCssRulesLength(sheet) {
-    var rule = ('insertRule' in sheet) ? sheet.cssRules : sheet.rules;
-    return rule.length;
+    return ('replaceSync' in sheet) ? (sheet.cssRules && sheet.cssRules.length) : (sheet.rules && sheet.rules.length);
   }
 
   function toDegree (y, x) {
@@ -256,13 +367,6 @@
     return direction;
   }
 
-  // https://toddmotto.com/ditch-the-array-foreach-call-nodelist-hack/
-  function forEach (arr, callback, scope) {
-    for (var i = 0, l = arr.length; i < l; i++) {
-      callback.call(scope, arr[i], i);
-    }
-  }
-
   var classListSupport = 'classList' in document.createElement('_');
 
   var hasClass = classListSupport ?
@@ -270,16 +374,27 @@
       function (el, str) { return el.className.indexOf(str) >= 0; };
 
   var addClass = classListSupport ?
-      function (el, str) {
-        if (!hasClass(el,  str)) { el.classList.add(str); }
+      function (el, str, sheet) {
+        if (!hasClass(el,  str)) { 
+          el.classList.add(str);
+
+          if (!('replaceSync' in sheet)) {
+            addInlineStyles(el, sheet);
+          }
+        }
       } :
-      function (el, str) {
+      function (el, str, sheet) {
         if (!hasClass(el,  str)) { el.className += ' ' + str; }
       };
 
   var removeClass = classListSupport ?
-      function (el, str) {
-        if (hasClass(el,  str)) { el.classList.remove(str); }
+      function (el, str, sheet) {
+        if (hasClass(el,  str)) { 
+          el.classList.remove(str);
+          if (!('replaceSync' in sheet)) {
+            removeInlineStyles(el, sheet);
+          } 
+        }
       } :
       function (el, str) {
         if (hasClass(el, str)) { el.className = el.className.replace(str, ''); }
@@ -480,6 +595,19 @@
     }
   }
 
+  function checkConstructStyleSheet() {
+      try{
+          let sheet = new CSSStyleSheet();
+          if ('replaceSync' in sheet) {
+              return true;
+          } else {
+              return false;
+          }
+      } catch(err) {
+          return false;
+      }
+  }
+
   // Object.keys
   if (!Object.keys) {
     Object.keys = function(object) {
@@ -591,7 +719,7 @@
       if (localStorageAccess) {
         // remove storage when browser version changes
         if (tnsStorage['tnsApp'] && tnsStorage['tnsApp'] !== browserInfo) {
-          ['tC', 'tPL', 'tMQ', 'tTf', 't3D', 'tTDu', 'tTDe', 'tADu', 'tADe', 'tTE', 'tAE'].forEach(function(item) { tnsStorage.removeItem(item); });
+          ['tC', 'tPL', 'tMQ', 'tTf', 't3D', 'tTDu', 'tTDe', 'tADu', 'tADe', 'tTE', 'tAE', 'tCSS'].forEach(function(item) { tnsStorage.removeItem(item); });
         }
         // update browserInfo
         localStorage['tnsApp'] = browserInfo;
@@ -608,7 +736,8 @@
         ANIMATIONDURATION = tnsStorage['tADu'] ? checkStorageValue(tnsStorage['tADu']) : setLocalStorage(tnsStorage, 'tADu', whichProperty('animationDuration'), localStorageAccess),
         ANIMATIONDELAY = tnsStorage['tADe'] ? checkStorageValue(tnsStorage['tADe']) : setLocalStorage(tnsStorage, 'tADe', whichProperty('animationDelay'), localStorageAccess),
         TRANSITIONEND = tnsStorage['tTE'] ? checkStorageValue(tnsStorage['tTE']) : setLocalStorage(tnsStorage, 'tTE', getEndProperty(TRANSITIONDURATION, 'Transition'), localStorageAccess),
-        ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess);
+        ANIMATIONEND = tnsStorage['tAE'] ? checkStorageValue(tnsStorage['tAE']) : setLocalStorage(tnsStorage, 'tAE', getEndProperty(ANIMATIONDURATION, 'Animation'), localStorageAccess),
+        HASCSSSTYLESHEET = tnsStorage['tCSS'] ? checkStorageValue(tnsStorage['tCSS']) : setLocalStorage(tnsStorage, 'tCSS', checkConstructStyleSheet(), localStorageAccess);
 
     // get element nodes from selectors
     var supportConsoleWarn = win.console && typeof win.console.warn === "function",
@@ -737,7 +866,7 @@
         autoplayText = getOption('autoplayText'),
         autoplayHoverPause = getOption('autoplayHoverPause'),
         autoplayResetOnVisibility = getOption('autoplayResetOnVisibility'),
-        sheet = createStyleSheet(null, getOption('nonce'), container),
+        sheet = createStyleSheet(null, getOption('nonce'), container, HASCSSSTYLESHEET),
         lazyload = options.lazyload,
         lazyloadSelector = options.lazyloadSelector,
         slidePositions, // collection of slide positions
@@ -1167,9 +1296,9 @@
       // add id, class, aria attributes
       // before clone slides
       forEach(slideItems, function(item, i) {
-        addClass(item, 'tns-item');
+        addClass(item, 'tns-item', sheet);
         if (!item.id) { item.id = slideId + '-item' + i; }
-        if (!carousel && animateNormal) { addClass(item, animateNormal); }
+        if (!carousel && animateNormal) { addClass(item, animateNormal, sheet); }
         setAttrs(item, {
           'aria-hidden': 'true',
           'tabindex': '-1'
@@ -1186,13 +1315,13 @@
         for (var j = cloneCount; j--;) {
           var num = j%slideCount,
               cloneFirst = slideItems[num].cloneNode(true);
-          addClass(cloneFirst, slideClonedClass);
+          addClass(cloneFirst, slideClonedClass, sheet);
           removeAttrs(cloneFirst, 'id');
           fragmentAfter.insertBefore(cloneFirst, fragmentAfter.firstChild);
 
           if (carousel) {
             var cloneLast = slideItems[slideCount - 1 - num].cloneNode(true);
-            addClass(cloneLast, slideClonedClass);
+            addClass(cloneLast, slideClonedClass, sheet);
             removeAttrs(cloneLast, 'id');
             fragmentBefore.appendChild(cloneLast);
           }
@@ -1219,7 +1348,7 @@
             if (src && src.indexOf('data:image') < 0) {
               img.src = '';
               addEvents(img, imgEvents);
-              addClass(img, 'loading');
+              addClass(img, 'loading', sheet);
 
               img.src = src;
             // data img
@@ -1297,8 +1426,8 @@
         for (var i = index, l = index + Math.min(slideCount, items); i < l; i++) {
           var item = slideItems[i];
           item.style.left = (i - index) * 100 / items + '%';
-          addClass(item, animateIn);
-          removeClass(item, animateNormal);
+          addClass(item, animateIn, sheet);
+          removeClass(item, animateNormal, sheet);
         }
       }
 
@@ -1522,7 +1651,7 @@
 
         setAttrs(navItems[navCurrentIndex], {'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent});
         removeAttrs(navItems[navCurrentIndex], 'tabindex');
-        addClass(navItems[navCurrentIndex], navActiveClass);
+        addClass(navItems[navCurrentIndex], navActiveClass, sheet);
 
         // add events
         addEvents(navContainer, navEvents);
@@ -2057,8 +2186,8 @@
       if (cloneCount) {
         var str = 'tns-transparent';
         for (var i = cloneCount; i--;) {
-          if (carousel) { addClass(slideItems[i], str); }
-          addClass(slideItems[slideCountNew - i - 1], str);
+          if (carousel) { addClass(slideItems[i], str, sheet); }
+          addClass(slideItems[slideCountNew - i - 1], str, sheet);
         }
       }
 
@@ -2079,8 +2208,8 @@
       if (cloneCount) {
         var str = 'tns-transparent';
         for (var i = cloneCount; i--;) {
-          if (carousel) { removeClass(slideItems[i], str); }
-          removeClass(slideItems[slideCountNew - i - 1], str);
+          if (carousel) { removeClass(slideItems[i], str, sheet); }
+          removeClass(slideItems[slideCountNew - i - 1], str, sheet);
         }
       }
 
@@ -2111,8 +2240,8 @@
         for (var i = index, l = index + slideCount; i < l; i++) {
           var item = slideItems[i];
           removeAttrs(item, ['style']);
-          removeClass(item, animateIn);
-          removeClass(item, animateNormal);
+          removeClass(item, animateIn, sheet);
+          removeClass(item, animateNormal, sheet);
         }
       }
 
@@ -2142,7 +2271,7 @@
           var item = slideItems[i],
               classN = i < index + items ? animateIn : animateNormal;
           item.style.left = (i - index) * 100 / items + '%';
-          addClass(item, classN);
+          addClass(item, classN, sheet);
         }
       }
 
@@ -2254,7 +2383,7 @@
             var srcset = getAttr(img, 'data-srcset');
             if (srcset) { img.srcset = srcset; }
 
-            addClass(img, 'loading');
+            addClass(img, 'loading', sheet);
           }
         });
       }
@@ -2269,18 +2398,18 @@
     }
 
     function imgLoaded (img) {
-      addClass(img, 'loaded');
+      addClass(img, 'loaded', sheet);
       imgCompleted(img);
     }
 
     function imgFailed (img) {
-      addClass(img, 'failed');
+      addClass(img, 'failed', sheet);
       imgCompleted(img);
     }
 
     function imgCompleted (img) {
-      addClass(img, imgCompleteClass);
-      removeClass(img, 'loading');
+      addClass(img, imgCompleteClass, sheet);
+      removeClass(img, 'loading', sheet);
       removeEvents(img, imgEvents);
     }
 
@@ -2383,7 +2512,7 @@
         if (i >= start && i <= end) {
           if (hasAttr(item, 'aria-hidden')) {
             removeAttrs(item, ['aria-hidden', 'tabindex']);
-            addClass(item, slideActiveClass);
+            addClass(item, slideActiveClass, sheet);
           }
         // hide slides
         } else {
@@ -2392,7 +2521,7 @@
               'aria-hidden': 'true',
               'tabindex': '-1'
             });
-            removeClass(item, slideActiveClass);
+            removeClass(item, slideActiveClass, sheet);
           }
         }
       });
@@ -2406,25 +2535,25 @@
 
         if (i >= index && i < l) {
           // add transitions to visible slides when adjusting their positions
-          addClass(item, 'tns-moving');
+          addClass(item, 'tns-moving', sheet);
 
           item.style.left = (i - index) * 100 / items + '%';
-          addClass(item, animateIn);
-          removeClass(item, animateNormal);
+          addClass(item, animateIn, sheet);
+          removeClass(item, animateNormal, sheet);
         } else if (item.style.left) {
           item.style.left = '';
-          addClass(item, animateNormal);
-          removeClass(item, animateIn);
+          addClass(item, animateNormal, sheet);
+          removeClass(item, animateIn, sheet);
         }
 
         // remove outlet animation
-        removeClass(item, animateOut);
+        removeClass(item, animateOut, sheet);
       }
 
       // removing '.tns-moving'
       setTimeout(function() {
         forEach(slideItems, function(el) {
-          removeClass(el, 'tns-moving');
+          removeClass(el, 'tns-moving', sheet);
         });
       }, 300);
     }
@@ -2444,11 +2573,11 @@
             'tabindex': '-1',
             'aria-label': navStr + (navCurrentIndexCached + 1)
           });
-          removeClass(navPrev, navActiveClass);
+          removeClass(navPrev, navActiveClass, sheet);
 
           setAttrs(navCurrent, {'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent});
           removeAttrs(navCurrent, 'tabindex');
-          addClass(navCurrent, navActiveClass);
+          addClass(navCurrent, navActiveClass, sheet);
 
           navCurrentIndexCached = navCurrentIndex;
         }
@@ -2579,8 +2708,8 @@
         if (animateDelay && TRANSITIONDELAY) {
           item.style[TRANSITIONDELAY] = item.style[ANIMATIONDELAY] = animateDelay * (i - number) / 1000 + 's';
         }
-        removeClass(item, classOut);
-        addClass(item, classIn);
+        removeClass(item, classOut, sheet);
+        addClass(item, classIn, sheet);
 
         if (isOut) { slideItemsOut.push(item); }
       }
@@ -2678,8 +2807,8 @@
               item.style[ANIMATIONDELAY] = '';
               item.style[TRANSITIONDELAY] = '';
             }
-            removeClass(item, animateOut);
-            addClass(item, animateNormal);
+            removeClass(item, animateOut, sheet);
+            addClass(item, animateNormal, sheet);
           }
         }
 
