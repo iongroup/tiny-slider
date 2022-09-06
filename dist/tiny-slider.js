@@ -1578,6 +1578,7 @@
       updateSlideStatus();
 
       // == live region ==
+      /* Live region removed to override with SDK */ 
       // outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
       // liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
 
