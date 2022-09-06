@@ -958,7 +958,6 @@
           'error': onImgFailed
         },
         imgsComplete,
-        liveregionCurrent,
         preventScroll = options.preventScrollOnTouch === 'force' ? true : false;
 
     // controls
@@ -1579,8 +1578,8 @@
       updateSlideStatus();
 
       // == live region ==
-      outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
-      liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+      // outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
+      // liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
 
       // == autoplayInit ==
       if (hasAutoplay) {
@@ -2034,7 +2033,6 @@
       } else if (fixedWidth || autoWidth) {
         doLazyLoad();
         updateSlideStatus();
-        updateLiveRegion();
       }
 
       if (itemsChanged && !carousel) { updateGallerySlidePositions(); }
@@ -2281,18 +2279,6 @@
       disabled = false;
     }
 
-    function updateLiveRegion () {
-      var str = getLiveRegionStr();
-      if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
-    }
-
-    function getLiveRegionStr () {
-      var arr = getVisibleSlideRange(),
-          start = arr[0] + 1,
-          end = arr[1] + 1;
-      return start === end ? start + '' : start + ' to ' + end;
-    }
-
     function getVisibleSlideRange (val) {
       if (val == null) { val = getContainerTransformValue(); }
       var start = index, end, rangestart, rangeend;
@@ -2452,7 +2438,6 @@
     function additionalUpdates () {
       doLazyLoad();
       updateSlideStatus();
-      updateLiveRegion();
       updateControlsStatus();
       updateNavStatus();
     }
@@ -2510,16 +2495,21 @@
       forEach(slideItems, function(item, i) {
         // show slides
         if (i >= start && i <= end) {
+          setAttrs(item, {
+            'tabindex': '0'
+          });
           if (hasAttr(item, 'aria-hidden')) {
-            removeAttrs(item, ['aria-hidden', 'tabindex']);
+            removeAttrs(item, ['aria-hidden']);
             addClass(item, slideActiveClass, sheet);
           }
         // hide slides
         } else {
+          setAttrs(item, {
+            'tabindex': '-1'
+          });
           if (!hasAttr(item, 'aria-hidden')) {
             setAttrs(item, {
-              'aria-hidden': 'true',
-              'tabindex': '-1'
+              'aria-hidden': 'true'
             });
             removeClass(item, slideActiveClass, sheet);
           }
@@ -3074,7 +3064,13 @@
     // on key nav
     function onNavKeydown (e) {
       e = getEvent(e);
-      var curElement = doc.activeElement;
+      const root = container.getRootNode();
+      let curElement;
+      if (root instanceof ShadowRoot) {
+        curElement = e.srcElement;
+      } else {
+        curElement = doc.activeElement;
+      }
       if (!hasAttr(curElement, 'data-nav')) { return; }
 
       // var code = e.keyCode,

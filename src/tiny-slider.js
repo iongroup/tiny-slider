@@ -1010,8 +1010,8 @@ export var tns = function(options) {
     updateSlideStatus();
 
     // == live region ==
-    outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
-    liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+    // outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
+    // liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
 
     // == autoplayInit ==
     if (hasAutoplay) {
@@ -1714,8 +1714,9 @@ export var tns = function(options) {
   }
 
   function updateLiveRegion () {
-    var str = getLiveRegionStr();
-    if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
+    // Live region updation stopped to override with sdk live item focus
+    // var str = getLiveRegionStr();
+    // if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
   }
 
   function getLiveRegionStr () {
@@ -1942,16 +1943,21 @@ export var tns = function(options) {
     forEach(slideItems, function(item, i) {
       // show slides
       if (i >= start && i <= end) {
+        setAttrs(item, {
+          'tabindex': '0'
+        });
         if (hasAttr(item, 'aria-hidden')) {
-          removeAttrs(item, ['aria-hidden', 'tabindex']);
+          removeAttrs(item, ['aria-hidden']);
           addClass(item, slideActiveClass, sheet);
         }
       // hide slides
       } else {
+        setAttrs(item, {
+          'tabindex': '-1'
+        });
         if (!hasAttr(item, 'aria-hidden')) {
           setAttrs(item, {
-            'aria-hidden': 'true',
-            'tabindex': '-1'
+            'aria-hidden': 'true'
           });
           removeClass(item, slideActiveClass, sheet);
         }
@@ -2506,7 +2512,13 @@ export var tns = function(options) {
   // on key nav
   function onNavKeydown (e) {
     e = getEvent(e);
-    var curElement = doc.activeElement;
+    const root = container.getRootNode();
+    let curElement;
+    if (root instanceof ShadowRoot) {
+      curElement = e.srcElement;
+    } else {
+      curElement = doc.activeElement;
+    }
     if (!hasAttr(curElement, 'data-nav')) { return; }
 
     // var code = e.keyCode,
