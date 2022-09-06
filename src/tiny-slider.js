@@ -1010,6 +1010,7 @@ export var tns = function(options) {
     updateSlideStatus();
 
     // == live region ==
+    /* Live region removed to override with SDK */ 
     // outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
     // liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
 
@@ -1714,7 +1715,7 @@ export var tns = function(options) {
   }
 
   function updateLiveRegion () {
-    // Live region updation stopped to override with sdk live item focus
+    /* Live region updation stopped to override with sdk */
     // var str = getLiveRegionStr();
     // if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
   }
