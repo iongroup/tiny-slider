@@ -110,7 +110,8 @@ export var tns = function(options) {
     freezable: true,
     onInit: false,
     useLocalStorage: true,
-    nonce: false
+    nonce: false,
+    disableLiveRegion: false
   }, options || {});
 
   var doc = document,
@@ -388,7 +389,8 @@ export var tns = function(options) {
       },
       imgsComplete,
       liveregionCurrent,
-      preventScroll = options.preventScrollOnTouch === 'force' ? true : false;
+      preventScroll = options.preventScrollOnTouch === 'force' ? true : false,
+      disableLiveRegion = options.disableLiveRegion;
 
   // controls
   if (hasControls) {
@@ -1010,9 +1012,10 @@ export var tns = function(options) {
     updateSlideStatus();
 
     // == live region ==
-    /* Live region removed to override with SDK */ 
-    // outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
-    // liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+    if (!disableLiveRegion) {
+      outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
+      liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+    } 
 
     // == autoplayInit ==
     if (hasAutoplay) {
@@ -1715,9 +1718,10 @@ export var tns = function(options) {
   }
 
   function updateLiveRegion () {
-    /* Live region updation stopped to override with sdk */
-    // var str = getLiveRegionStr();
-    // if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
+    if (!disableLiveRegion) {
+      var str = getLiveRegionStr();
+      if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
+    }
   }
 
   function getLiveRegionStr () {
@@ -1944,21 +1948,19 @@ export var tns = function(options) {
     forEach(slideItems, function(item, i) {
       // show slides
       if (i >= start && i <= end) {
-        setAttrs(item, {
-          'tabindex': '0'
-        });
         if (hasAttr(item, 'aria-hidden')) {
           removeAttrs(item, ['aria-hidden']);
+          setAttrs(item, {
+            'tabindex': '0'
+          });
           addClass(item, slideActiveClass, sheet);
         }
       // hide slides
       } else {
-        setAttrs(item, {
-          'tabindex': '-1'
-        });
         if (!hasAttr(item, 'aria-hidden')) {
           setAttrs(item, {
-            'aria-hidden': 'true'
+            'aria-hidden': 'true',
+            'tabindex': '-1'
           });
           removeClass(item, slideActiveClass, sheet);
         }
