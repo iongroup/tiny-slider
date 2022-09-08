@@ -1951,8 +1951,8 @@ export var tns = function(options) {
         if (hasAttr(item, 'aria-hidden')) {
           removeAttrs(item, ['aria-hidden']);
           setAttrs(item, {
-            'tabindex': '0'
-          });
+          'tabindex': '0'
+        });
           addClass(item, slideActiveClass, sheet);
         }
       // hide slides
@@ -2133,6 +2133,16 @@ export var tns = function(options) {
 
   function doContainerTransform (val) {
     if (val == null) { val = getContainerTransformValue(); }
+    // make items to be rendered into the viewport visible
+    let [start, end] = getVisibleSlideRange();
+    if (end === slideItems.length - 1) {
+      start--;
+    }
+    for (let index = start; index <= end; index++) {
+      if (slideItems[index]) {
+        slideItems[index].style.visibility = "visible";
+      }
+    }
     container.style[transformAttr] = transformPrefix + val + transformPostfix;
   }
 
@@ -2237,6 +2247,17 @@ export var tns = function(options) {
     // make sure trantionend/animationend events run only once
     if (carousel || running) {
       events.emit('transitionEnd', info(event));
+
+      // Hide non visible items
+      let [start, end] = getVisibleSlideRange();
+      if (end === slideItems.length - 1) {
+        start--;
+      }
+      forEach(slideItems, (item, index) => {
+        if ((index < start || index > end) && item) {
+          item.style.visibility = "hidden";
+        }
+      });
 
       if (!carousel && slideItemsOut.length > 0) {
         for (var i = 0; i < slideItemsOut.length; i++) {
