@@ -2702,10 +2702,7 @@
     function doContainerTransform (val) {
       if (val == null) { val = getContainerTransformValue(); }
       // make items to be rendered into the viewport visible
-      let [start, end] = getVisibleSlideRange();
-      if (end === slideItems.length - 1) {
-        start--;
-      }
+      const [start, end] = getVisibleItemRange();
       for (let index = start; index <= end; index++) {
         if (slideItems[index]) {
           slideItems[index].style.visibility = "visible";
@@ -2802,6 +2799,17 @@
       return str.toLowerCase().replace(/-/g, '');
     }
 
+    function getVisibleItemRange() {
+      let [start, end] = getVisibleSlideRange();
+      if (end === slideItems.length - 1) {
+        // Any partially visible elements in the left are not considered in the visible range
+        // This occurs carousel is slided to the right-most edge
+        // Decrement start value to take into account leftmost partially visible item
+        start--;
+      }
+      return [start, end];
+    }
+
     // AFTER TRANSFORM
     // Things need to be done after a transfer:
     // 1. check index
@@ -2817,10 +2825,7 @@
         events.emit('transitionEnd', info(event));
 
         // Hide non visible items
-        let [start, end] = getVisibleSlideRange();
-        if (end === slideItems.length - 1) {
-          start--;
-        }
+        const [start, end] = getVisibleItemRange();
         forEach(slideItems, (item, index) => {
           if ((index < start || index > end) && item) {
             item.style.visibility = "hidden";
