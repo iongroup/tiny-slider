@@ -110,7 +110,8 @@ export var tns = function(options) {
     freezable: true,
     onInit: false,
     useLocalStorage: true,
-    nonce: false
+    nonce: false,
+    disableLiveRegion: false
   }, options || {});
 
   var doc = document,
@@ -388,7 +389,8 @@ export var tns = function(options) {
       },
       imgsComplete,
       liveregionCurrent,
-      preventScroll = options.preventScrollOnTouch === 'force' ? true : false;
+      preventScroll = options.preventScrollOnTouch === 'force' ? true : false,
+      disableLiveRegion = options.disableLiveRegion;
 
   // controls
   if (hasControls) {
@@ -1010,8 +1012,10 @@ export var tns = function(options) {
     updateSlideStatus();
 
     // == live region ==
-    outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
-    liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+    if (!disableLiveRegion) {
+      outerWrapper.insertAdjacentHTML('afterbegin', '<div class="tns-liveregion tns-visually-hidden" aria-live="polite" aria-atomic="true">slide <span class="current">' + getLiveRegionStr() + '</span>  of ' + slideCount + '</div>');
+      liveregionCurrent = outerWrapper.querySelector('.tns-liveregion .current');
+    } 
 
     // == autoplayInit ==
     if (hasAutoplay) {
@@ -1714,8 +1718,10 @@ export var tns = function(options) {
   }
 
   function updateLiveRegion () {
-    var str = getLiveRegionStr();
-    if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
+    if (!disableLiveRegion) {
+      var str = getLiveRegionStr();
+      if (liveregionCurrent.innerHTML !== str) { liveregionCurrent.innerHTML = str; }
+    }
   }
 
   function getLiveRegionStr () {
@@ -1943,7 +1949,10 @@ export var tns = function(options) {
       // show slides
       if (i >= start && i <= end) {
         if (hasAttr(item, 'aria-hidden')) {
-          removeAttrs(item, ['aria-hidden', 'tabindex']);
+          removeAttrs(item, ['aria-hidden']);
+          setAttrs(item, {
+          'tabindex': '0'
+        });
           addClass(item, slideActiveClass, sheet);
         }
       // hide slides
@@ -2124,6 +2133,13 @@ export var tns = function(options) {
 
   function doContainerTransform (val) {
     if (val == null) { val = getContainerTransformValue(); }
+    // make items to be rendered into the viewport visible
+    const [start, end] = getVisibleItemRange();
+    for (let index = start; index <= end; index++) {
+      if (slideItems[index]) {
+        slideItems[index].style.visibility = "visible";
+      }
+    }
     container.style[transformAttr] = transformPrefix + val + transformPostfix;
   }
 
@@ -2215,6 +2231,17 @@ export var tns = function(options) {
     return str.toLowerCase().replace(/-/g, '');
   }
 
+  function getVisibleItemRange() {
+    let [start, end] = getVisibleSlideRange();
+    if (end === slideItems.length - 1) {
+      // Any partially visible elements in the left are not considered in the visible range
+      // This occurs carousel is slided to the right-most edge
+      // Decrement start value to take into account leftmost partially visible item
+      start--;
+    }
+    return [start, end];
+  }
+
   // AFTER TRANSFORM
   // Things need to be done after a transfer:
   // 1. check index
@@ -2228,6 +2255,14 @@ export var tns = function(options) {
     // make sure trantionend/animationend events run only once
     if (carousel || running) {
       events.emit('transitionEnd', info(event));
+
+      // Hide non visible items
+      const [start, end] = getVisibleItemRange();
+      forEach(slideItems, (item, index) => {
+        if ((index < start || index > end) && item) {
+          item.style.visibility = "hidden";
+        }
+      });
 
       if (!carousel && slideItemsOut.length > 0) {
         for (var i = 0; i < slideItemsOut.length; i++) {
@@ -2506,7 +2541,13 @@ export var tns = function(options) {
   // on key nav
   function onNavKeydown (e) {
     e = getEvent(e);
-    var curElement = doc.activeElement;
+    const root = container.getRootNode();
+    let curElement;
+    if (root instanceof ShadowRoot) {
+      curElement = e.srcElement;
+    } else {
+      curElement = doc.activeElement;
+    }
     if (!hasAttr(curElement, 'data-nav')) { return; }
 
     // var code = e.keyCode,
