@@ -986,7 +986,7 @@
           navCurrentIndex = getCurrentNavIndex(),
           navCurrentIndexCached = navCurrentIndex,
           navActiveClass = 'tns-nav-active',
-          navStr = 'Carousel Page ',
+          navStr = 'Carousel Item ',
           navStrCurrent = ' (Current Slide)';
     }
 
@@ -1621,6 +1621,7 @@
               'tabindex': '-1',
               'aria-label': navStr + (i + 1),
               'aria-controls': slideId,
+              'role': 'menuitem'
             });
           });
 
@@ -1630,7 +1631,7 @@
               hiddenStr = navAsThumbnails ? '' : 'style="display:none"';
           for (var i = 0; i < slideCount; i++) {
             // hide nav items by default
-            navHtml += '<button type="button" data-nav="' + i +'" tabindex="-1" aria-controls="' + slideId + '" ' + hiddenStr + ' aria-label="' + navStr + (i + 1) +'"></button>';
+            navHtml += '<button type="button" data-nav="' + i +'" tabindex="-1" role="menuitem" aria-controls="' + slideId + '" ' + hiddenStr + ' aria-label="' + navStr + (i + 1) +'"></button>';
           }
           navHtml = '<div class="tns-nav" aria-label="Carousel Pagination">' + navHtml + '</div>';
           outerWrapper.insertAdjacentHTML(getInsertPosition(options.navPosition), navHtml);
@@ -1659,6 +1660,7 @@
 
         // add events
         addEvents(navContainer, navEvents);
+        events.emit('navReady', info());
       }
 
 
@@ -1678,15 +1680,20 @@
 
         if (options.controlsContainer) {
           setAttrs(controlsContainer, {
-            'aria-label': 'Carousel Navigation',
-            'tabindex': '0'
+            'aria-label': 'Carousel Navigation'
           });
         }
 
         if (options.controlsContainer || (options.prevButton && options.nextButton)) {
           setAttrs([prevButton, nextButton], {
             'aria-controls': slideId,
-            'tabindex': '-1',
+            'tabindex': '0',
+          });
+          setAttrs(prevButton, {
+            'aria-label': 'Go to previous slide'
+          });
+          setAttrs(nextButton, {
+            'aria-label': 'Go to next slide'
           });
         }
 
