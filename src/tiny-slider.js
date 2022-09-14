@@ -111,7 +111,8 @@ export var tns = function(options) {
     onInit: false,
     useLocalStorage: true,
     nonce: false,
-    disableLiveRegion: false
+    disableLiveRegion: false,
+    disableNavLabelUpdate: false
   }, options || {});
 
   var doc = document,
@@ -390,7 +391,8 @@ export var tns = function(options) {
       imgsComplete,
       liveregionCurrent,
       preventScroll = options.preventScrollOnTouch === 'force' ? true : false,
-      disableLiveRegion = options.disableLiveRegion;
+      disableLiveRegion = options.disableLiveRegion,
+      disableNavLabelUpdate = options.disableNavLabelUpdate;
 
   // controls
   if (hasControls) {
@@ -2018,12 +2020,14 @@ export var tns = function(options) {
             navCurrent = navItems[navCurrentIndex];
 
         setAttrs(navPrev, {
-          'tabindex': '-1',
-          'aria-label': navStr + (navCurrentIndexCached + 1)
+          'tabindex': '-1'
         });
         removeClass(navPrev, navActiveClass, sheet);
+        if (!disableNavLabelUpdate) {
+          setAttrs(navPrev, { 'aria-label': navStr + (navCurrentIndexCached + 1) });
+          setAttrs(navCurrent, { 'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent });
+        }
 
-        setAttrs(navCurrent, {'aria-label': navStr + (navCurrentIndex + 1) + navStrCurrent});
         removeAttrs(navCurrent, 'tabindex');
         addClass(navCurrent, navActiveClass, sheet);
 
