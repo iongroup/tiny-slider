@@ -1,4 +1,4 @@
-import { uglify } from "rollup-plugin-uglify";
+import terser  from "@rollup/plugin-terser";
 const config = {
   input: 'src/tiny-slider.js',
   output: {
@@ -15,7 +15,7 @@ const config_min = {
     format: 'umd',
     name: 'tns'
   },
-  plugins: [uglify()]
+  plugins: [terser()]
 }
 
 export default [config, config_min];

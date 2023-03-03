@@ -1,5 +1,5 @@
 {
-  "name": "tiny-slider",
+  "name": "@ion.web/tiny-slider",
   "version": "2.9.4-ion4",
   "description": "Vanilla javascript slider for all purposes, inspired by Owl Carousel.",
   "main": "dist/tiny-slider.js",
@@ -50,6 +50,6 @@
     "rollup": "^2.56.3"
   },
   "dependencies": {
-    "rollup-plugin-uglify": "^6.0.4"
+    "@rollup/plugin-terser": "^0.4.0"
   }
 }
